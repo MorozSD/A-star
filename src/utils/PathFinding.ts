@@ -1,4 +1,4 @@
-import type {Point} from "./dataConverter";
+import type {Point} from "./dataConverter.js";
 
 type PathNode = {
     x: number;

@@ -1,5 +1,5 @@
-import {findPathAStar, simplifyPath} from "./PathFinding";
-import {areRectsOverlapping} from "./ValidChecker";
+import {findPathAStar, simplifyPath} from "./PathFinding.js";
+import {areRectsOverlapping} from "./ValidChecker.js";
 
 export type Point = {
     x: number;
@@ -56,20 +56,16 @@ export const getClosestPointOnRectPerimeter = (p: Point, rect: Rect): { point: P
     return { point: { x: clampedX, y: clampedY }, edge: edge };
 };
 
- export const dataConverter = (
+export const dataConverter = (
   rect1: Rect,
   rect2: Rect,
   cPoint1: ConnectionPoint,
   cPoint2: ConnectionPoint
 ): Point[] => {
-  if (areRectsOverlapping(rect1, rect2)) {
-    console.warn("⚠️ The rectangles intersect. A straight line is drawn.");
-    return [cPoint1.point, cPoint2.point];
-  }
 
-  const CELL_SIZE = 10;
+  const CELL_SIZE = 5;
   const PADDING = 20;
-  const OBSTACLE_PADDING = 4;
+  const OBSTACLE_PADDING = 1;
 
   const adjustedStart = getClosestPointOnRectPerimeter(cPoint1.point, rect1).point;
   const adjustedEnd = getClosestPointOnRectPerimeter(cPoint2.point, rect2).point;
@@ -106,12 +102,14 @@ export const getClosestPointOnRectPerimeter = (p: Point, rect: Rect): { point: P
   const gridWidth = gridMaxX - gridMinX;
   const gridHeight = gridMaxY - gridMinY;
 
+  
+
   if (gridWidth <= 0 || gridHeight <= 0) {
     console.warn("❌ Invalid grid dimensions. Returning empty path.");
     return [];
   }
-
-  const grid: number[][] = Array.from({ length: gridHeight }, () => Array(gridWidth).fill(0));
+ const grid: number[][] = Array.from({ length: gridHeight }, () => Array(gridWidth).fill(0));
+  
 
   const worldToGrid = (p: Point): Point => ({
     x: Math.round(p.x / CELL_SIZE) - gridMinX,
@@ -123,22 +121,26 @@ export const getClosestPointOnRectPerimeter = (p: Point, rect: Rect): { point: P
     y: (p.y + gridMinY) * CELL_SIZE,
   });
 
-  for (const rect of [rect1, rect2]) {
-    const rectXStart = Math.floor((rect.position.x - rect.size.width / 2) / CELL_SIZE) - OBSTACLE_PADDING;
-    const rectXEnd = Math.ceil((rect.position.x + rect.size.width / 2) / CELL_SIZE) + OBSTACLE_PADDING;
-    const rectYStart = Math.floor((rect.position.y - rect.size.height / 2) / CELL_SIZE) - OBSTACLE_PADDING;
-    const rectYEnd = Math.ceil((rect.position.y + rect.size.height / 2) / CELL_SIZE) + OBSTACLE_PADDING;
+ for (const rect of [rect1, rect2]) {
+  const topLeft = worldToGrid({
+    x: rect.position.x - rect.size.width / 2 - OBSTACLE_PADDING * CELL_SIZE,
+    y: rect.position.y - rect.size.height / 2 - OBSTACLE_PADDING * CELL_SIZE,
+  });
 
-    for (let y = rectYStart; y < rectYEnd; y++) {
-      for (let x = rectXStart; x < rectXEnd; x++) {
-        const gridX = x - gridMinX;
-        const gridY = y - gridMinY;
-        if (gridX >= 0 && gridX < gridWidth && gridY >= 0 && gridY < gridHeight) {
-          grid[gridY][gridX] = 1;
-        }
+  const bottomRight = worldToGrid({
+    x: rect.position.x + rect.size.width / 2 + OBSTACLE_PADDING * CELL_SIZE,
+    y: rect.position.y + rect.size.height / 2 + OBSTACLE_PADDING * CELL_SIZE,
+  });
+
+  for (let y = topLeft.y; y <= bottomRight.y; y++) {
+    for (let x = topLeft.x; x <= bottomRight.x; x++) {
+      if (x >= 0 && x < gridWidth && y >= 0 && y < gridHeight) {
+        grid[y][x] = 1;
       }
     }
   }
+}
+
 
   const findValidStartEnd = (point: Point, gridRef: number[][], gridW: number, gridH: number): Point | null => {
     const gridPoint = worldToGrid(point);
@@ -189,6 +191,10 @@ export const getClosestPointOnRectPerimeter = (p: Point, rect: Rect): { point: P
   }
 
   const gridPath = findPathAStar(grid, finalStartGrid, finalEndGrid);
+  console.log("Final path:");
+console.table(gridPath);
+console.log("Grid value at each step:");
+gridPath.forEach(p => console.log(`(${p.x}, ${p.y}): ${grid[p.y]?.[p.x]}`));
 
   if (gridPath.length === 0) {
     console.warn("❌ A* path not found.");

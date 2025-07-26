@@ -1,8 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Button, Slider, Stack, Typography, Box } from '@mui/material';
-import { getConnectionSide, getAngle } from './utils/ValidChecker'; // укажи путь к функции
-import {dataConverter} from "./utils/dataConverter"
-import {Point, Rect, ConnectionPoint } from "./utils/dataConverter"
+import { getConnectionSide, getAngle, areRectsOverlapping } from './utils/ValidChecker.js'; // укажи путь к функции
+import {dataConverter} from "./utils/dataConverter.js"
+import {Point, Rect, ConnectionPoint, getClosestPointOnRectPerimeter } from "./utils/dataConverter.js"
 
 
 const GRID_SIZE = 50;
@@ -25,7 +25,6 @@ export default function App() {
   const [mouseDown, setMouseDown] = useState(false);
   const [pointStatuses, setPointStatuses] = useState<(Side | false)[]>([]);
   const [path, setPath] = useState<Point[]>([]);
-
 
  useEffect(() => {
   const canvas = canvasRef.current;
@@ -101,13 +100,21 @@ export default function App() {
     }
   };
 
-  const updatePointStatuses = (newPoints: ConnectionPoint[]) => {
+  /*const updatePointStatuses = (newPoints: ConnectionPoint[]) => {
     const statuses = newPoints.map((pt) => {
       const side = rects.map((r) => getConnectionSide(r, pt)).find((s) => s !== null);
       return side || false;
     });
     setPointStatuses(statuses);
-  };
+  };*/
+  const updatePointStatuses = (newPoints: ConnectionPoint[], currentRects = rects) => {
+  const statuses = newPoints.map((pt) => {
+    const side = currentRects.map((r) => getConnectionSide(r, pt)).find((s) => s !== null);
+    return side || false;
+  });
+  setPointStatuses(statuses);
+};
+
 
   const handleDrawRoute = () => {
   if (rects.length !== 2 || points.length !== 2) {
@@ -119,18 +126,23 @@ export default function App() {
     return;
   }
 
+  if (areRectsOverlapping(rects[0], rects[1])) {
+    alert('Прямоугольники пересекаются!');
+    return;
+  }
+
+  console.log("RECTS", rects);
+
   const updatedPoints = points.map((cp) => {
     const side = rects.map((r) => getConnectionSide(r, cp)).find((s) => s !== null);
     const angle = side ? getAngle(side) : undefined;
     return { ...cp, angle };
   });
 
+
   const newPath = dataConverter(rects[0], rects[1], updatedPoints[0], updatedPoints[1]);
   setPath(newPath);
 };
-
-
-
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isEditing || mouseDown || mode === 'move-rect' || mode === 'move-point') return;
@@ -146,13 +158,13 @@ export default function App() {
       const updated = [...rects.slice(-1), newRect].slice(-MAX_RECTS);
       setRects(updated);
       setSelectedRectIndex(updated.length - 1);
-      updatePointStatuses(points); // Обновить стороны для точек
+      updatePointStatuses(points, updated);
     }
 
     if (mode === 'delete-rect') {
       const updated = rects.filter((r) => !pointInRect({ x, y }, r));
       setRects(updated);
-      updatePointStatuses(points); // Обновить стороны для точек
+      updatePointStatuses(points, updated);
     }
 
     if (mode === 'add-point') {
@@ -165,7 +177,6 @@ export default function App() {
     if (mode === 'delete-point') {
       const updated = points.filter((p) => distance(p.point, { x, y }) > 10);
       setPoints(updated);
-      updatePointStatuses(updated);
     }
   };
 
@@ -215,7 +226,7 @@ export default function App() {
       const updatedRects = [...rects];
       updatedRects[draggingIndex.index] = { ...updatedRects[draggingIndex.index], position: { x, y } };
       setRects(updatedRects);
-      updatePointStatuses(points);
+      updatePointStatuses(points, updatedRects);
     }
 
     if (draggingIndex.type === 'point') {
@@ -307,6 +318,7 @@ export default function App() {
                       ...copy[selectedRectIndex],
                       size: { ...copy[selectedRectIndex].size, width },
                     };
+                    updatePointStatuses(points, copy);
                     return copy;
                   });
                 }

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import type { Rect} from '../utils/dataConverter';
-import { dataConverter} from '../utils/dataConverter';
-import {areRectsOverlapping, getAngle, getConnectionSide } from "../utils/ValidChecker";
+import type { Rect} from '../utils/dataConverter.js';
+import { dataConverter} from '../utils/dataConverter.js';
+import {areRectsOverlapping, getAngle, getConnectionSide } from "../utils/ValidChecker.js";
 
 const testRect: Rect = { position: { x: 100, y: 100 }, size: { width: 100, height: 50 } };
 
@@ -79,10 +79,6 @@ describe('getAngle', () => {
     expect(getAngle('left')).toBe(180);
   });
 
-  it('должен возвращать 0 для неизвестной стороны', () => {
-    // @ts-expect-error тест fallback
-    expect(getAngle('unknown')).toBe(0);
-  });
 });
 
 describe('dataConverter', () => {

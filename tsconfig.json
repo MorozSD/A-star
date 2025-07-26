@@ -1,13 +1,15 @@
 {
   "compilerOptions": {
-    "jsx": "react-jsx", // Для React 17+ (автоматический импорт JSX)
-    "jsxImportSource": "react", // Указывает на источник JSX-трансформации
-    // Другие важные настройки:
-    "module": "ESNext",
-    "target": "ESNext",
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "strict": true
-  },
+  "jsx": "react-jsx",
+  "jsxImportSource": "react",
+  "module": "Node16",
+  "target": "ESNext",
+  "moduleResolution": "node16",
+  "types": ["node"],
+  "esModuleInterop": true,
+  "strict": true,
+  "skipLibCheck": true,
+  "noEmit": true             
+},
   "include": ["src"]
 }
